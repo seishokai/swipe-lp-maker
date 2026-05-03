@@ -16,8 +16,9 @@ export function SortableImageList({
   reorderAction: (formData: FormData) => Promise<void>;
   deleteAction: (formData: FormData) => Promise<void>;
 }) {
-  const initialIds = useMemo(() => images.map((image) => image.id).join(","), [images]);
-  const [items, setItems] = useState(images);
+  const safeImages = useMemo(() => (Array.isArray(images) ? images : []), [images]);
+  const initialIds = useMemo(() => safeImages.map((image) => image.id).join(","), [safeImages]);
+  const [items, setItems] = useState(safeImages);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const changed = items.map((image) => image.id).join(",") !== initialIds;
 

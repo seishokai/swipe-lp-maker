@@ -50,11 +50,12 @@ export function CtaAreaEditor({
   action: (formData: FormData) => Promise<void>;
   deleteAction: (formData: FormData) => Promise<void>;
 }) {
-  const images = lp.lp_images.map((image) => ({
+  const sourceImages = Array.isArray(lp.lp_images) ? lp.lp_images : [];
+  const images = sourceImages.map((image) => ({
     ...image,
     cta_areas: image.cta_areas || [],
   }));
-  const [selectedId, setSelectedId] = useState(lp.lp_images[0]?.id);
+  const [selectedId, setSelectedId] = useState(sourceImages[0]?.id);
   const selectedImage = useMemo(
     () => images.find((image) => image.id === selectedId) || images[0],
     [images, selectedId],
