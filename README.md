@@ -71,6 +71,10 @@ npm run dev
 
 日本語の手順は `SUPABASE_SETUP_JA.md` にまとめています。
 
+## Vercelデプロイ
+
+デプロイ手順は `VERCEL_DEPLOY_JA.md` にまとめています。
+
 ## 確認コマンド
 
 ```bash
