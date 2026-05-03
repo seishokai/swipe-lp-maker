@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LogIn } from "lucide-react";
+import { KeyRound, LogIn, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -37,7 +37,7 @@ export function LoginForm() {
       },
     });
     setLoading(false);
-    setMessage(error ? translateAuthMessage(error.message) : "ログインリンクを送信しました。メールを確認してください。");
+    setMessage(error ? translateAuthMessage(error.message) : "ログインリンクを送りました。メールを確認してください。");
   }
 
   async function loginWithPassword() {
@@ -63,36 +63,37 @@ export function LoginForm() {
       redirectTo: `${getSiteUrl()}/reset-password`,
     });
     setLoading(false);
-    setMessage(error ? translateAuthMessage(error.message) : "パスワード再設定リンクを送信しました。最新のメールを開いてください。");
+    setMessage(error ? translateAuthMessage(error.message) : "パスワード再設定リンクを送りました。最新メールを開いてください。");
   }
 
   return (
-    <form onSubmit={sendMagicLink} className="grid gap-5 rounded-lg border border-line bg-white p-6 shadow-sm">
+    <form onSubmit={sendMagicLink} className="grid gap-5 rounded-lg border border-white/70 bg-white/90 p-6 shadow-soft backdrop-blur">
       <Field label="メールアドレス">
         <Input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" type="email" required />
       </Field>
       <Field label="パスワード">
         <Input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="パスワードログイン時だけ入力" type="password" />
       </Field>
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" disabled={loading || !email || !password} onClick={loginWithPassword}>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Button type="button" disabled={loading || !email || !password} onClick={loginWithPassword} className="h-12">
           <LogIn size={18} />
-          パスワードでログイン
+          ログイン
         </Button>
-        <Button type="submit" disabled={loading} className="bg-slate-700 hover:bg-slate-800">
-          <LogIn size={18} />
-          ログインリンクを送信
+        <Button type="submit" disabled={loading || !email} className="h-12 bg-slate-700 hover:bg-slate-800">
+          <Mail size={18} />
+          メールで入る
         </Button>
       </div>
       <button
-        className="w-fit text-left text-sm font-medium text-accent underline-offset-4 hover:underline disabled:text-slate-400"
+        className="inline-flex w-fit items-center gap-2 text-left text-sm font-semibold text-accent underline-offset-4 hover:underline disabled:text-slate-400"
         type="button"
         disabled={loading || !email}
         onClick={sendPasswordReset}
       >
-        パスワード再設定リンクを送信
+        <KeyRound size={16} />
+        パスワード再設定リンクを送る
       </button>
-      {message ? <p className="text-sm text-slate-600">{message}</p> : null}
+      {message ? <p className="rounded-md bg-mist p-3 text-sm text-slate-700">{message}</p> : null}
     </form>
   );
 }

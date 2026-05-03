@@ -92,6 +92,12 @@ function SwipeSlide({
   return (
     <section ref={ref} className="lp-slide">
       {image.media_type === "video" ? (
+        <video className="lp-slide-bg" src={image.public_url} autoPlay muted loop playsInline aria-hidden />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="lp-slide-bg" src={image.public_url} alt="" aria-hidden />
+      )}
+      {image.media_type === "video" ? (
         <video
           className="lp-slide-image"
           src={image.public_url}
@@ -126,7 +132,7 @@ function SwipeSlide({
                 key={area.id}
                 href={href}
                 aria-label={area.label || `${title} CTA`}
-                className="absolute block"
+                className="absolute z-[2] block"
                 style={{
                   left: rect.left + area.x * rect.width,
                   top: rect.top + area.y * rect.height,

@@ -31,10 +31,16 @@ export default async function EditLpPage({ params }: { params: Promise<{ id: str
   async function uploadAction(formData: FormData) {
     "use server";
     const { supabase, user } = await requireUser();
-    const file = formData.get("image");
-    if (!(file instanceof File) || file.size === 0) return;
-    await createImageRecord(supabase, id, user.id, file);
+    const files = formData
+      .getAll("images")
+      .filter((file): file is File => file instanceof File && file.size > 0);
+
+    for (const file of files) {
+      await createImageRecord(supabase, id, user.id, file);
+    }
+
     revalidatePath(`/dashboard/lps/${id}/edit`);
+    revalidatePath(`/lp/${lp.slug}`);
   }
 
   async function moveAction(formData: FormData) {
@@ -128,17 +134,25 @@ export default async function EditLpPage({ params }: { params: Promise<{ id: str
       <PublicUrlPanel url={publicUrl} published={lp.status === "published"} />
 
       <section className="grid gap-3">
-        <h2 className="text-lg font-semibold text-ink">画像</h2>
+        <div>
+          <h2 className="text-lg font-semibold text-ink">スライド管理</h2>
+          <p className="mt-1 text-sm text-slate-500">画像・動画の追加、順番変更、削除をここでまとめて行います。</p>
+        </div>
         <ImageUploader action={uploadAction} />
         <SortableImageList images={images} moveAction={moveAction} reorderAction={reorderAction} deleteAction={deleteImageAction} />
       </section>
 
       <section className="grid gap-3">
-        <h2 className="text-lg font-semibold text-ink">画像内CTAエリア</h2>
+        <div>
+          <h2 className="text-lg font-semibold text-ink">画像内CTAエリア</h2>
+          <p className="mt-1 text-sm text-slate-500">クリックさせたい場所を画像の上でドラッグして、透明リンクを作ります。</p>
+        </div>
         {images.length > 0 ? (
           <CtaAreaEditor lp={{ ...lp, lp_images: images }} action={ctaAction} deleteAction={deleteCtaAction} />
         ) : (
-          <p className="text-sm text-slate-500">画像を追加するとCTAエリアを設定できます。</p>
+          <p className="rounded-lg border border-line bg-white p-5 text-sm text-slate-500 shadow-soft">
+            先にスライドを追加すると、CTAエリアを設定できます。
+          </p>
         )}
       </section>
     </div>

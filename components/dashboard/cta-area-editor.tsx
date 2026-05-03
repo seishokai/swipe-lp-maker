@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import Image from "next/image";
+import { Film, MousePointer2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -50,12 +51,55 @@ export function CtaAreaEditor({
   action: (formData: FormData) => Promise<void>;
   deleteAction: (formData: FormData) => Promise<void>;
 }) {
+  const [selectedId, setSelectedId] = useState(lp.lp_images[0]?.id);
+  const selectedImage = useMemo(
+    () => lp.lp_images.find((image) => image.id === selectedId) || lp.lp_images[0],
+    [lp.lp_images, selectedId],
+  );
+
+  if (!selectedImage) return null;
+
   return (
-    <div className="grid gap-5">
-      {lp.lp_images.map((image, index) => (
-        <CtaAreaSlide key={image.id} lp={lp} image={image} index={index} action={action} deleteAction={deleteAction} />
-      ))}
-    </div>
+    <section className="grid gap-4 rounded-lg border border-line bg-white p-4 shadow-soft xl:grid-cols-[280px_1fr]">
+      <div className="grid content-start gap-3">
+        <div className="rounded-md bg-mist p-3">
+          <p className="text-sm font-semibold text-ink">編集するスライド</p>
+          <p className="mt-1 text-xs text-slate-500">左で選んで、右の画像上をドラッグします。</p>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+          {lp.lp_images.map((image, index) => (
+            <button
+              key={image.id}
+              type="button"
+              onClick={() => setSelectedId(image.id)}
+              className={`grid grid-cols-[48px_1fr] items-center gap-3 rounded-md border p-2 text-left transition ${
+                selectedImage.id === image.id ? "border-accent bg-accent/5 ring-4 ring-accent/10" : "border-line bg-white hover:bg-mist"
+              }`}
+            >
+              <div className="relative h-16 w-12 overflow-hidden rounded bg-black">
+                {image.media_type === "video" ? (
+                  <>
+                    <video src={image.public_url} muted playsInline className="h-full w-full object-contain" />
+                    <span className="absolute right-1 top-1 rounded bg-black/70 p-0.5 text-white">
+                      <Film size={10} />
+                    </span>
+                  </>
+                ) : (
+                  <Image src={image.public_url} alt={image.alt_text || ""} fill className="object-contain" sizes="48px" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-ink">Slide {index + 1}</p>
+                <p className="mt-1 text-xs text-slate-500">{image.cta_areas.length} CTA</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <CtaAreaSlide lp={lp} image={selectedImage} index={lp.lp_images.findIndex((image) => image.id === selectedImage.id)} action={action} deleteAction={deleteAction} />
+    </section>
   );
 }
 
@@ -77,6 +121,12 @@ function CtaAreaSlide({
   const [mediaSize, setMediaSize] = useState({ width: image.width || 1080, height: image.height || 1920 });
   const [displayRect, setDisplayRect] = useState<PixelRect | null>(null);
   const [draft, setDraft] = useState<RatioRect>({ x: 0.15, y: 0.7, width: 0.7, height: 0.12 });
+
+  function updateDisplayRect(nextSize = mediaSize) {
+    if (previewRef.current) {
+      setDisplayRect(getContainedRect(previewRef.current, nextSize.width, nextSize.height));
+    }
+  }
 
   function toMediaPoint(clientX: number, clientY: number) {
     const preview = previewRef.current;
@@ -131,19 +181,17 @@ function CtaAreaSlide({
     };
   }
 
-  function updateDisplayRect(nextSize = mediaSize) {
-    if (previewRef.current) {
-      setDisplayRect(getContainedRect(previewRef.current, nextSize.width, nextSize.height));
-    }
-  }
-
   return (
-    <section className="grid gap-4 rounded-lg border border-line bg-white p-5 shadow-soft lg:grid-cols-[280px_1fr]">
+    <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
       <div>
-        <p className="mb-3 text-sm font-semibold text-ink">Slide {index + 1} / {image.media_type === "video" ? "動画" : "画像"}</p>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-sm font-semibold text-ink">Slide {index + 1} / {image.media_type === "video" ? "動画" : "画像"}</p>
+          <span className="rounded-full bg-mist px-2 py-1 text-xs font-semibold text-slate-500">{image.cta_areas.length} CTA</span>
+        </div>
+
         <div
           ref={previewRef}
-          className="relative h-[430px] touch-none overflow-hidden rounded-md bg-black"
+          className="relative h-[520px] touch-none overflow-hidden rounded-md bg-black"
           onPointerDown={startDraw}
           onPointerMove={moveDraw}
           onPointerUp={() => (startRef.current = null)}
@@ -181,22 +229,36 @@ function CtaAreaSlide({
             />
           )}
           {image.cta_areas.map((area) => (
-            <span key={area.id} className="pointer-events-none absolute border-2 border-white bg-white/20" style={renderArea(area)} />
+            <span key={area.id} className="pointer-events-none absolute border-2 border-white bg-white/20 shadow-[0_0_0_9999px_rgba(0,0,0,0.05)]" style={renderArea(area)} />
           ))}
           <span className="pointer-events-none absolute border-2 border-accent bg-accent/25" style={renderArea(draft)} />
         </div>
-        <p className="mt-2 text-xs text-slate-500">プレビュー上をドラッグするとCTA範囲を作れます。</p>
+
+        <p className="mt-2 inline-flex items-center gap-2 text-xs text-slate-500">
+          <MousePointer2 size={14} />
+          画像上でクリックしたまま引っ張ると、CTA範囲を作れます。
+        </p>
       </div>
 
       <div className="grid content-start gap-4">
+        <div className="rounded-md bg-mist p-4">
+          <p className="text-sm font-semibold text-ink">
+            予定範囲: x {draft.x.toFixed(3)}, y {draft.y.toFixed(3)}, 幅 {draft.width.toFixed(3)}, 高さ {draft.height.toFixed(3)}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">数字を直接変えて微調整もできます。</p>
+        </div>
+
         {image.cta_areas.length > 0 ? (
           <div className="grid gap-2">
             {image.cta_areas.map((area) => (
-              <div key={area.id} className="flex items-center justify-between gap-3 rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-700">
-                <p>{area.label || "CTA"}: x {area.x}, y {area.y}, w {area.width}, h {area.height}</p>
+              <div key={area.id} className="flex items-center justify-between gap-3 rounded-md border border-line bg-white px-3 py-2 text-sm text-slate-700">
+                <div>
+                  <p className="font-semibold text-ink">{area.label || "CTA"}</p>
+                  <p className="mt-1 text-xs text-slate-500">x {area.x}, y {area.y}, 幅 {area.width}, 高さ {area.height}</p>
+                </div>
                 <form action={deleteAction}>
                   <input type="hidden" name="cta_area_id" value={area.id} />
-                  <Button className="h-8 w-8 bg-red-700 px-0 hover:bg-red-800" aria-label="CTA削除">
+                  <Button className="h-9 w-9 bg-red-700 px-0 hover:bg-red-800" aria-label="CTAを削除">
                     <Trash2 size={15} />
                   </Button>
                 </form>
@@ -204,10 +266,10 @@ function CtaAreaSlide({
             ))}
           </div>
         ) : (
-          <p className="text-sm text-slate-500">CTAエリアは未設定です。</p>
+          <p className="rounded-md border border-line bg-white p-4 text-sm text-slate-500">このスライドにはまだCTAエリアがありません。</p>
         )}
 
-        <form action={action} className="grid gap-3">
+        <form action={action} className="grid gap-3 rounded-md border border-line bg-white p-4">
           <input type="hidden" name="lp_image_id" value={image.id} />
           <div className="grid gap-3 md:grid-cols-2">
             <Field label="ラベル">
@@ -217,7 +279,7 @@ function CtaAreaSlide({
               <Input name="url" type="url" placeholder={lp.cta_url || "https://example.com"} />
             </Field>
           </div>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <Field label="x">
               <Input name="x" type="number" min="0" max="1" step="0.001" value={draft.x.toFixed(3)} onChange={(event) => setDraft({ ...draft, x: Number(event.target.value) })} />
             </Field>
@@ -233,10 +295,10 @@ function CtaAreaSlide({
           </div>
           <Button className="w-fit">
             <Plus size={18} />
-            CTAエリア追加
+            CTAエリアを追加
           </Button>
         </form>
       </div>
-    </section>
+    </div>
   );
 }
