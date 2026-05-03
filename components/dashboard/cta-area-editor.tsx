@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { Film, MousePointer2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -51,10 +50,14 @@ export function CtaAreaEditor({
   action: (formData: FormData) => Promise<void>;
   deleteAction: (formData: FormData) => Promise<void>;
 }) {
+  const images = lp.lp_images.map((image) => ({
+    ...image,
+    cta_areas: image.cta_areas || [],
+  }));
   const [selectedId, setSelectedId] = useState(lp.lp_images[0]?.id);
   const selectedImage = useMemo(
-    () => lp.lp_images.find((image) => image.id === selectedId) || lp.lp_images[0],
-    [lp.lp_images, selectedId],
+    () => images.find((image) => image.id === selectedId) || images[0],
+    [images, selectedId],
   );
 
   if (!selectedImage) return null;
@@ -68,7 +71,7 @@ export function CtaAreaEditor({
         </div>
 
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-          {lp.lp_images.map((image, index) => (
+          {images.map((image, index) => (
             <button
               key={image.id}
               type="button"
@@ -86,7 +89,8 @@ export function CtaAreaEditor({
                     </span>
                   </>
                 ) : (
-                  <Image src={image.public_url} alt={image.alt_text || ""} fill className="object-contain" sizes="48px" />
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={image.public_url} alt={image.alt_text || ""} className="h-full w-full object-contain" />
                 )}
               </div>
               <div className="min-w-0">
@@ -98,7 +102,7 @@ export function CtaAreaEditor({
         </div>
       </div>
 
-      <CtaAreaSlide lp={lp} image={selectedImage} index={lp.lp_images.findIndex((image) => image.id === selectedImage.id)} action={action} deleteAction={deleteAction} />
+      <CtaAreaSlide lp={lp} image={selectedImage} index={images.findIndex((image) => image.id === selectedImage.id)} action={action} deleteAction={deleteAction} />
     </section>
   );
 }

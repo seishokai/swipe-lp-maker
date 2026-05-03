@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
 import { ArrowDown, ArrowUp, Check, Film, GripVertical, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { LpImage } from "@/types/lp";
@@ -90,7 +89,8 @@ export function SortableImageList({
                   </span>
                 </>
               ) : (
-                <Image src={image.public_url} alt={image.alt_text || ""} fill className="object-contain" sizes="96px" />
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={image.public_url} alt={image.alt_text || ""} className="h-full w-full object-contain" />
               )}
             </div>
 
