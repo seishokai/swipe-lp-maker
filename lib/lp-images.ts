@@ -7,6 +7,7 @@ export async function createImageRecord(
   file: File,
 ) {
   const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const mediaType = file.type.startsWith("video/") ? "video" : "image";
   const imageId = crypto.randomUUID();
   const path = `${userId}/${lpId}/${imageId}.${extension}`;
 
@@ -33,6 +34,7 @@ export async function createImageRecord(
     storage_path: path,
     public_url: publicUrl,
     alt_text: file.name,
+    media_type: mediaType,
     sort_order: count || 0,
   });
 

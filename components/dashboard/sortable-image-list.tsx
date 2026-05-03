@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { ArrowDown, ArrowUp, GripVertical, Save, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Film, GripVertical, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { LpImage } from "@/types/lp";
 
@@ -40,7 +40,7 @@ export function SortableImageList({
 
   return (
     <div className="grid gap-3">
-      <form action={reorderAction} className="flex items-center justify-between rounded-lg border border-line bg-white p-3">
+      <form action={reorderAction} className="flex items-center justify-between rounded-lg border border-line bg-white p-3 shadow-sm">
         <input type="hidden" name="image_ids" value={items.map((image) => image.id).join(",")} />
         <p className="text-sm text-slate-600">ドラッグ、または上下ボタンで並び替えできます。</p>
         <Button className="h-9" disabled={!changed}>
@@ -56,33 +56,31 @@ export function SortableImageList({
           onDragStart={() => setDraggingId(image.id)}
           onDragOver={(event) => event.preventDefault()}
           onDrop={() => onDrop(image.id)}
-          className="grid grid-cols-[24px_88px_1fr_auto] items-center gap-4 rounded-lg border border-line bg-white p-3"
+          className="grid grid-cols-[24px_88px_1fr_auto] items-center gap-4 rounded-lg border border-line bg-white p-3 shadow-sm"
         >
           <GripVertical className="text-slate-400" size={20} />
           <div className="relative h-28 w-20 overflow-hidden rounded-md bg-black">
-            <Image src={image.public_url} alt={image.alt_text || ""} fill className="object-contain" sizes="80px" />
+            {image.media_type === "video" ? (
+              <>
+                <video src={image.public_url} muted playsInline className="h-full w-full object-contain" />
+                <span className="absolute right-1 top-1 rounded bg-black/70 p-1 text-white">
+                  <Film size={13} />
+                </span>
+              </>
+            ) : (
+              <Image src={image.public_url} alt={image.alt_text || ""} fill className="object-contain" sizes="80px" />
+            )}
           </div>
           <div>
-            <p className="text-sm font-medium text-ink">Slide {index + 1}</p>
-            <p className="mt-1 break-all text-xs text-slate-500">{image.storage_path}</p>
+            <p className="text-sm font-semibold text-ink">Slide {index + 1}</p>
+            <p className="mt-1 text-xs text-slate-500">{image.media_type === "video" ? "動画" : "画像"}</p>
+            <p className="mt-1 break-all text-xs text-slate-400">{image.storage_path}</p>
           </div>
           <div className="flex gap-2">
-            <button
-              type="button"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-ink text-white disabled:opacity-40"
-              disabled={index === 0}
-              aria-label="上へ"
-              onClick={() => moveLocal(index, index - 1)}
-            >
+            <button type="button" className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-ink text-white disabled:opacity-40" disabled={index === 0} aria-label="上へ" onClick={() => moveLocal(index, index - 1)}>
               <ArrowUp size={17} />
             </button>
-            <button
-              type="button"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-ink text-white disabled:opacity-40"
-              disabled={index === items.length - 1}
-              aria-label="下へ"
-              onClick={() => moveLocal(index, index + 1)}
-            >
+            <button type="button" className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-ink text-white disabled:opacity-40" disabled={index === items.length - 1} aria-label="下へ" onClick={() => moveLocal(index, index + 1)}>
               <ArrowDown size={17} />
             </button>
             <form action={moveAction}>

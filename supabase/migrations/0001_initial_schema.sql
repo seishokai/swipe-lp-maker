@@ -14,6 +14,9 @@ create table public.landing_pages (
   slug text not null unique,
   status text not null default 'draft' check (status in ('draft', 'published', 'archived')),
   cta_url text,
+  fixed_cta_enabled boolean not null default false,
+  fixed_cta_label text not null default '詳しく見る',
+  fixed_cta_style text not null default 'solid' check (fixed_cta_style in ('solid', 'glass', 'minimal')),
   meta_pixel_id text,
   google_analytics_id text,
   custom_head_tags text,
@@ -30,6 +33,7 @@ create table public.lp_images (
   alt_text text,
   width integer,
   height integer,
+  media_type text not null default 'image' check (media_type in ('image', 'video')),
   sort_order integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

@@ -27,11 +27,30 @@ function getContainedRect(container: HTMLElement, imageWidth: number, imageHeigh
 }
 
 export function SwipeLpViewer({ lp }: { lp: LandingPageWithImages }) {
+  const fixedHref = lp.cta_url;
+
+  if (lp.lp_images.length === 0) {
+    return (
+      <main className="grid min-h-svh place-items-center bg-black px-6 text-center text-white">
+        <div>
+          <p className="text-sm text-white/60">Swipe LP Maker</p>
+          <h1 className="mt-3 text-2xl font-semibold">{lp.title}</h1>
+          <p className="mt-3 text-sm text-white/70">このLPにはまだスライドがありません。</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="lp-scroll" aria-label={lp.title}>
       {lp.lp_images.map((image) => (
         <SwipeSlide key={image.id} image={image} fallbackUrl={lp.cta_url} title={lp.title} />
       ))}
+      {lp.fixed_cta_enabled && fixedHref ? (
+        <a href={fixedHref} className={`fixed-cta fixed-cta-${lp.fixed_cta_style || "solid"}`}>
+          {lp.fixed_cta_label || "詳しく見る"}
+        </a>
+      ) : null}
     </main>
   );
 }
@@ -48,8 +67,8 @@ function SwipeSlide({
   const ref = useRef<HTMLDivElement>(null);
   const [rect, setRect] = useState<Rect | null>(null);
   const [naturalSize, setNaturalSize] = useState({
-    width: image.width || 0,
-    height: image.height || 0,
+    width: image.width || 1080,
+    height: image.height || 1920,
   });
 
   useEffect(() => {
@@ -72,16 +91,32 @@ function SwipeSlide({
 
   return (
     <section ref={ref} className="lp-slide">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        className="lp-slide-image"
-        src={image.public_url}
-        alt={image.alt_text || title}
-        onLoad={(event) => {
-          const target = event.currentTarget;
-          setNaturalSize({ width: target.naturalWidth, height: target.naturalHeight });
-        }}
-      />
+      {image.media_type === "video" ? (
+        <video
+          className="lp-slide-image"
+          src={image.public_url}
+          autoPlay
+          muted
+          loop
+          playsInline
+          controls={false}
+          onLoadedMetadata={(event) => {
+            const target = event.currentTarget;
+            setNaturalSize({ width: target.videoWidth || 1080, height: target.videoHeight || 1920 });
+          }}
+        />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          className="lp-slide-image"
+          src={image.public_url}
+          alt={image.alt_text || title}
+          onLoad={(event) => {
+            const target = event.currentTarget;
+            setNaturalSize({ width: target.naturalWidth, height: target.naturalHeight });
+          }}
+        />
+      )}
       {rect
         ? image.cta_areas.map((area) => {
             const href = area.url || fallbackUrl;

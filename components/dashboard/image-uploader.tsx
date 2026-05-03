@@ -5,9 +5,9 @@ export function ImageUploader({ action }: { action: (formData: FormData) => Prom
   return (
     <form action={action} className="grid gap-3 rounded-lg border border-dashed border-line bg-white p-5">
       <label className="text-sm font-medium text-ink" htmlFor="image">
-        画像アップロード
+        画像 / 動画アップロード
       </label>
-      <input id="image" name="image" type="file" accept="image/*" required className="text-sm" />
+      <input id="image" name="image" type="file" accept="image/*,video/*" required className="text-sm" />
       <Button className="w-fit">
         <Upload size={18} />
         追加

@@ -21,6 +21,7 @@ export type LpImage = {
   alt_text: string | null;
   width: number | null;
   height: number | null;
+  media_type: "image" | "video";
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -34,6 +35,9 @@ export type LandingPage = {
   slug: string;
   status: LandingPageStatus;
   cta_url: string | null;
+  fixed_cta_enabled: boolean;
+  fixed_cta_label: string | null;
+  fixed_cta_style: "solid" | "glass" | "minimal" | null;
   meta_pixel_id: string | null;
   google_analytics_id: string | null;
   custom_head_tags: string | null;

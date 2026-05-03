@@ -31,11 +31,7 @@ export async function getLandingPage(
   return data as LandingPageWithImages;
 }
 
-export async function createLandingPage(
-  supabase: AppSupabaseClient,
-  userId: string,
-  formData: FormData,
-) {
+function getLpPayload(formData: FormData) {
   const title = String(formData.get("title") || "").trim();
   const slug = normalizeSlug(String(formData.get("slug") || title));
 
@@ -43,15 +39,29 @@ export async function createLandingPage(
     throw new Error("Title and slug are required.");
   }
 
+  return {
+    title,
+    slug,
+    cta_url: String(formData.get("cta_url") || "").trim() || null,
+    fixed_cta_enabled: formData.get("fixed_cta_enabled") === "on",
+    fixed_cta_label: String(formData.get("fixed_cta_label") || "").trim() || "詳しく見る",
+    fixed_cta_style: String(formData.get("fixed_cta_style") || "solid"),
+    meta_pixel_id: String(formData.get("meta_pixel_id") || "").trim() || null,
+    google_analytics_id: String(formData.get("google_analytics_id") || "").trim() || null,
+  };
+}
+
+export async function createLandingPage(
+  supabase: AppSupabaseClient,
+  userId: string,
+  formData: FormData,
+) {
+  const payload = getLpPayload(formData);
   const { data, error } = await supabase
     .from("landing_pages")
     .insert({
       user_id: userId,
-      title,
-      slug,
-      cta_url: String(formData.get("cta_url") || "").trim() || null,
-      meta_pixel_id: String(formData.get("meta_pixel_id") || "").trim() || null,
-      google_analytics_id: String(formData.get("google_analytics_id") || "").trim() || null,
+      ...payload,
       status: "draft",
     })
     .select()
@@ -67,17 +77,11 @@ export async function updateLandingPage(
   userId: string,
   formData: FormData,
 ) {
-  const title = String(formData.get("title") || "").trim();
-  const slug = normalizeSlug(String(formData.get("slug") || title));
-
+  const payload = getLpPayload(formData);
   const { error } = await supabase
     .from("landing_pages")
     .update({
-      title,
-      slug,
-      cta_url: String(formData.get("cta_url") || "").trim() || null,
-      meta_pixel_id: String(formData.get("meta_pixel_id") || "").trim() || null,
-      google_analytics_id: String(formData.get("google_analytics_id") || "").trim() || null,
+      ...payload,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
@@ -120,6 +124,9 @@ export async function duplicateLandingPage(
       slug: createCopySlug(source.slug),
       status: "draft",
       cta_url: source.cta_url,
+      fixed_cta_enabled: source.fixed_cta_enabled,
+      fixed_cta_label: source.fixed_cta_label,
+      fixed_cta_style: source.fixed_cta_style,
       meta_pixel_id: source.meta_pixel_id,
       google_analytics_id: source.google_analytics_id,
       custom_head_tags: source.custom_head_tags,
@@ -146,6 +153,7 @@ export async function duplicateLandingPage(
         alt_text: image.alt_text,
         width: image.width,
         height: image.height,
+        media_type: image.media_type || "image",
         sort_order: image.sort_order,
       })
       .select()

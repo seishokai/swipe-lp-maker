@@ -13,23 +13,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="min-h-svh bg-paper">
-      <header className="border-b border-line bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <Link href="/dashboard/lps" className="text-lg font-semibold text-ink">
-            Swipe LP Maker
+    <div className="min-h-svh">
+      <header className="sticky top-0 z-20 border-b border-line/80 bg-white/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
+          <Link href="/dashboard/lps" className="flex items-center gap-3 text-lg font-semibold text-ink">
+            <span className="grid h-9 w-9 place-items-center rounded-md bg-ink text-sm text-white">SL</span>
+            <span>Swipe LP Maker</span>
           </Link>
           <div className="flex items-center gap-3">
-            <div className="text-sm text-slate-600">{user.email}</div>
+            <div className="hidden text-sm text-slate-600 sm:block">{user.email}</div>
             <form action={signOut}>
-              <button className="h-9 rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-50">
+              <button className="h-9 rounded-md border border-line bg-white px-3 text-sm font-semibold text-ink transition hover:bg-slate-50">
                 ログアウト
               </button>
             </form>
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-5 py-8">{children}</main>
+      <main className="mx-auto max-w-7xl px-5 py-8">{children}</main>
     </div>
   );
 }
