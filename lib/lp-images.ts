@@ -105,6 +105,56 @@ export async function createImageRecords(
   }
 }
 
+export async function createUploadedImageRows(
+  supabase: AppSupabaseClient,
+  lpId: string,
+  userId: string,
+  files: Array<{
+    storage_path: string;
+    public_url: string;
+    alt_text: string | null;
+    media_type: "image" | "video";
+  }>,
+) {
+  if (files.length === 0) return;
+  if (files.length > MAX_UPLOAD_FILES) {
+    throw new Error(`一度に追加できるのは${MAX_UPLOAD_FILES}ファイルまでです。`);
+  }
+
+  await assertOwnLandingPage(supabase, lpId, userId);
+
+  for (const file of files) {
+    if (!file.storage_path.startsWith(`${userId}/${lpId}/`)) {
+      throw new Error("アップロード先が正しくありません。画面を更新してもう一度試してください。");
+    }
+    if (file.media_type !== "image" && file.media_type !== "video") {
+      throw new Error("ファイル種別が正しくありません。");
+    }
+  }
+
+  const { data: current, error: currentError } = await supabase
+    .from("lp_images")
+    .select("sort_order")
+    .eq("lp_id", lpId)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+
+  if (currentError) throw currentError;
+
+  const firstSortOrder = typeof current?.[0]?.sort_order === "number" ? current[0].sort_order + 1 : 0;
+  const rows = files.map((file, index) => ({
+    lp_id: lpId,
+    storage_path: file.storage_path,
+    public_url: file.public_url,
+    alt_text: file.alt_text,
+    media_type: file.media_type,
+    sort_order: firstSortOrder + index,
+  }));
+
+  const { error } = await supabase.from("lp_images").insert(rows);
+  if (error) throw error;
+}
+
 export async function reorderImages(
   supabase: AppSupabaseClient,
   lpId: string,

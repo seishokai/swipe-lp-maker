@@ -11,7 +11,7 @@ import { SortableImageList } from "@/components/dashboard/sortable-image-list";
 import { getSiteUrl } from "@/lib/env";
 import { requireUser } from "@/lib/auth";
 import { deleteCtaArea, upsertCtaArea } from "@/lib/cta-areas";
-import { createImageRecords, deleteImageRecord, reorderImages } from "@/lib/lp-images";
+import { deleteImageRecord, reorderImages } from "@/lib/lp-images";
 import { getLandingPage, setPublishStatus, updateLandingPage } from "@/lib/lps";
 
 export default async function EditLpPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,94 +24,65 @@ export default async function EditLpPage({ params }: { params: Promise<{ id: str
   async function saveAction(formData: FormData) {
     "use server";
     const { supabase, user } = await requireUser();
-    const previousSlug = lp.slug;
+    const current = await getLandingPage(supabase, id, user.id);
     await updateLandingPage(supabase, id, user.id, formData);
     const updated = await getLandingPage(supabase, id, user.id);
     revalidatePath(`/dashboard/lps/${id}/edit`);
-    revalidatePath(`/lp/${previousSlug}`);
+    revalidatePath(`/dashboard/lps`);
+    revalidatePath(`/lp/${current.slug}`);
     revalidatePath(`/lp/${updated.slug}`);
-  }
-
-  async function uploadAction(formData: FormData) {
-    "use server";
-    const { supabase, user } = await requireUser();
-    const files = formData
-      .getAll("images")
-      .filter((file): file is File => file instanceof File && file.size > 0);
-
-    await createImageRecords(supabase, id, user.id, files);
-
-    revalidatePath(`/dashboard/lps/${id}/edit`);
-    revalidatePath(`/lp/${lp.slug}`);
-  }
-
-  async function moveAction(formData: FormData) {
-    "use server";
-    const { supabase, user } = await requireUser();
-    const current = await getLandingPage(supabase, id, user.id);
-    const ordered = [...(current.lp_images || [])].sort((a, b) => a.sort_order - b.sort_order);
-    const imageId = String(formData.get("image_id"));
-    const direction = String(formData.get("direction"));
-    const index = ordered.findIndex((image) => image.id === imageId);
-    const target = direction === "up" ? index - 1 : index + 1;
-
-    if (index >= 0 && target >= 0 && target < ordered.length) {
-      const next = [...ordered];
-      const [item] = next.splice(index, 1);
-      next.splice(target, 0, item);
-      await reorderImages(
-        supabase,
-        id,
-        user.id,
-        next.map((image) => image.id),
-      );
-      revalidatePath(`/dashboard/lps/${id}/edit`);
-      revalidatePath(`/lp/${lp.slug}`);
-    }
   }
 
   async function deleteImageAction(formData: FormData) {
     "use server";
     const { supabase, user } = await requireUser();
+    const current = await getLandingPage(supabase, id, user.id);
     await deleteImageRecord(supabase, String(formData.get("image_id")), user.id);
     revalidatePath(`/dashboard/lps/${id}/edit`);
-    revalidatePath(`/lp/${lp.slug}`);
+    revalidatePath(`/dashboard/lps`);
+    revalidatePath(`/lp/${current.slug}`);
   }
 
   async function reorderAction(formData: FormData) {
     "use server";
     const { supabase, user } = await requireUser();
+    const current = await getLandingPage(supabase, id, user.id);
     const imageIds = String(formData.get("image_ids") || "")
       .split(",")
       .map((imageId) => imageId.trim())
       .filter(Boolean);
     await reorderImages(supabase, id, user.id, imageIds);
     revalidatePath(`/dashboard/lps/${id}/edit`);
-    revalidatePath(`/lp/${lp.slug}`);
+    revalidatePath(`/dashboard/lps`);
+    revalidatePath(`/lp/${current.slug}`);
   }
 
   async function ctaAction(formData: FormData) {
     "use server";
     const { supabase, user } = await requireUser();
+    const current = await getLandingPage(supabase, id, user.id);
     await upsertCtaArea(supabase, user.id, formData);
     revalidatePath(`/dashboard/lps/${id}/edit`);
-    revalidatePath(`/lp/${lp.slug}`);
+    revalidatePath(`/lp/${current.slug}`);
   }
 
   async function deleteCtaAction(formData: FormData) {
     "use server";
     const { supabase, user } = await requireUser();
+    const current = await getLandingPage(supabase, id, user.id);
     await deleteCtaArea(supabase, user.id, String(formData.get("cta_area_id")));
     revalidatePath(`/dashboard/lps/${id}/edit`);
-    revalidatePath(`/lp/${lp.slug}`);
+    revalidatePath(`/lp/${current.slug}`);
   }
 
   async function publishAction(formData: FormData) {
     "use server";
     const { supabase, user } = await requireUser();
+    const current = await getLandingPage(supabase, id, user.id);
     await setPublishStatus(supabase, id, user.id, String(formData.get("publish")) === "true");
     revalidatePath(`/dashboard/lps/${id}/edit`);
-    revalidatePath(`/lp/${lp.slug}`);
+    revalidatePath(`/dashboard/lps`);
+    revalidatePath(`/lp/${current.slug}`);
   }
 
   return (
@@ -141,8 +112,8 @@ export default async function EditLpPage({ params }: { params: Promise<{ id: str
               <h2 className="text-lg font-semibold text-ink">画像・動画を編集</h2>
               <p className="mt-1 text-sm text-slate-500">まずここで素材を追加し、公開LPの表示順を整えます。</p>
             </div>
-            <ImageUploader action={uploadAction} />
-            <SortableImageList images={images} moveAction={moveAction} reorderAction={reorderAction} deleteAction={deleteImageAction} />
+            <ImageUploader lpId={id} userId={user.id} />
+            <SortableImageList images={images} reorderAction={reorderAction} deleteAction={deleteImageAction} />
           </section>
         }
         cta={

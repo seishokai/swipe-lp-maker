@@ -11,7 +11,6 @@ export function SortableImageList({
   deleteAction,
 }: {
   images: LpImage[];
-  moveAction: (formData: FormData) => Promise<void>;
   reorderAction: (formData: FormData) => Promise<void>;
   deleteAction: (formData: FormData) => Promise<void>;
 }) {

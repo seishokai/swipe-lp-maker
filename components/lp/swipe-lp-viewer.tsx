@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
+import { Maximize2, Minimize2, Monitor, Smartphone } from "lucide-react";
 import type { LandingPageWithImages } from "@/types/lp";
+
+type ViewMode = "phone" | "fill";
 
 type Rect = {
   left: number;
@@ -11,12 +14,13 @@ type Rect = {
   height: number;
 };
 
-function getContainedRectInside(element: HTMLElement, mediaWidth: number, mediaHeight: number): Rect {
+function getObjectFitRect(element: HTMLElement, mediaWidth: number, mediaHeight: number, mode: ViewMode): Rect {
   const box = element.getBoundingClientRect();
   const containerRatio = box.width / box.height;
   const mediaRatio = mediaWidth / mediaHeight;
+  const shouldFitByWidth = mode === "phone" ? mediaRatio > containerRatio : mediaRatio < containerRatio;
 
-  if (mediaRatio > containerRatio) {
+  if (shouldFitByWidth) {
     const width = box.width;
     const height = width / mediaRatio;
     return { left: 0, top: (box.height - height) / 2, width, height };
@@ -30,6 +34,25 @@ function getContainedRectInside(element: HTMLElement, mediaWidth: number, mediaH
 export function SwipeLpViewer({ lp }: { lp: LandingPageWithImages }) {
   const fixedHref = lp.cta_url;
   const images = [...(lp.lp_images || [])].sort((a, b) => a.sort_order - b.sort_order);
+  const [viewMode, setViewMode] = useState<ViewMode>("phone");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    function onFullscreenChange() {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    }
+
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
+  async function toggleFullscreen() {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+      return;
+    }
+    await document.documentElement.requestFullscreen();
+  }
 
   if (images.length === 0) {
     return (
@@ -44,9 +67,34 @@ export function SwipeLpViewer({ lp }: { lp: LandingPageWithImages }) {
   }
 
   return (
-    <main className="lp-scroll" aria-label={lp.title}>
+    <main className={`lp-scroll lp-scroll-${viewMode}`} aria-label={lp.title}>
+      <div className="lp-view-toolbar" aria-label="表示切替">
+        <button
+          type="button"
+          className={viewMode === "phone" ? "is-active" : ""}
+          onClick={() => setViewMode("phone")}
+          aria-label="スマホ比率で表示"
+        >
+          <Smartphone size={16} />
+          <span>スマホ比率</span>
+        </button>
+        <button
+          type="button"
+          className={viewMode === "fill" ? "is-active" : ""}
+          onClick={() => setViewMode("fill")}
+          aria-label="PC画面いっぱいに表示"
+        >
+          <Monitor size={16} />
+          <span>画面いっぱい</span>
+        </button>
+        <button type="button" onClick={toggleFullscreen} aria-label={isFullscreen ? "全画面を解除" : "全画面表示"}>
+          {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          <span>{isFullscreen ? "解除" : "全画面"}</span>
+        </button>
+      </div>
+
       {images.map((image) => (
-        <SwipeSlide key={image.id} image={image} fallbackUrl={lp.cta_url} title={lp.title} />
+        <SwipeSlide key={image.id} image={image} fallbackUrl={lp.cta_url} title={lp.title} viewMode={viewMode} />
       ))}
       {lp.fixed_cta_enabled && fixedHref ? (
         <a href={fixedHref} className={`fixed-cta fixed-cta-${lp.fixed_cta_style || "solid"}`}>
@@ -61,10 +109,12 @@ function SwipeSlide({
   image,
   fallbackUrl,
   title,
+  viewMode,
 }: {
   image: LandingPageWithImages["lp_images"][number];
   fallbackUrl: string | null;
   title: string;
+  viewMode: ViewMode;
 }) {
   const slideRef = useRef<HTMLElement>(null);
   const mediaRef = useRef<HTMLImageElement | HTMLVideoElement>(null);
@@ -85,12 +135,12 @@ function SwipeSlide({
 
       const slideBox = slide.getBoundingClientRect();
       const mediaBox = media.getBoundingClientRect();
-      const contained = getContainedRectInside(media, naturalSize.width, naturalSize.height);
+      const fitted = getObjectFitRect(media, naturalSize.width, naturalSize.height, viewMode);
       setRect({
-        left: mediaBox.left - slideBox.left + contained.left,
-        top: mediaBox.top - slideBox.top + contained.top,
-        width: contained.width,
-        height: contained.height,
+        left: mediaBox.left - slideBox.left + fitted.left,
+        top: mediaBox.top - slideBox.top + fitted.top,
+        width: fitted.width,
+        height: fitted.height,
       });
     }
 
@@ -105,7 +155,7 @@ function SwipeSlide({
       observer.disconnect();
       window.removeEventListener("orientationchange", update);
     };
-  }, [naturalSize.height, naturalSize.width]);
+  }, [naturalSize.height, naturalSize.width, viewMode]);
 
   const ctaAreas = image.cta_areas || [];
 
