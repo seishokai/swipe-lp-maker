@@ -1,13 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Check, Film, GripVertical, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { LpImage } from "@/types/lp";
 
 export function SortableImageList({
   images,
-  moveAction,
   reorderAction,
   deleteAction,
 }: {
@@ -21,6 +20,10 @@ export function SortableImageList({
   const [items, setItems] = useState(safeImages);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const changed = items.map((image) => image.id).join(",") !== initialIds;
+
+  useEffect(() => {
+    setItems(safeImages);
+  }, [safeImages]);
 
   function moveLocal(fromIndex: number, toIndex: number) {
     if (fromIndex === toIndex || toIndex < 0 || toIndex >= items.length) return;
@@ -38,11 +41,18 @@ export function SortableImageList({
     setDraggingId(null);
   }
 
+  function confirmDelete() {
+    const message = changed
+      ? "未保存の並び替えがあります。先に並び順を保存しないと、その変更は消えます。このスライドを削除しますか？"
+      : "このスライドを削除しますか？設定済みの画像内CTAも一緒に削除されます。";
+    return window.confirm(message);
+  }
+
   if (items.length === 0) {
     return (
       <div className="rounded-lg border border-line bg-white p-8 text-center shadow-soft">
         <p className="text-sm font-semibold text-ink">まだスライドがありません</p>
-        <p className="mt-1 text-sm text-slate-500">上の「スライドを追加」から画像を入れると、ここに一覧で表示されます。</p>
+        <p className="mt-1 text-sm text-slate-500">上の追加エリアから画像や動画をまとめてアップロードできます。</p>
       </div>
     );
   }
@@ -52,14 +62,20 @@ export function SortableImageList({
       <form action={reorderAction} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-white p-4 shadow-soft">
         <input type="hidden" name="image_ids" value={items.map((image) => image.id).join(",")} />
         <div>
-          <p className="text-sm font-semibold text-ink">スライド順</p>
-          <p className="mt-1 text-xs text-slate-500">つまみをドラッグ、または矢印ボタンで並び替えできます。</p>
+          <p className="text-sm font-semibold text-ink">スライド一覧</p>
+          <p className="mt-1 text-xs text-slate-500">ドラッグ、または矢印ボタンで順番を変えられます。変更後は保存してください。</p>
         </div>
         <Button className={changed ? "h-10" : "h-10 bg-slate-200 text-slate-500 hover:bg-slate-200"} disabled={!changed}>
           {changed ? <Save size={17} /> : <Check size={17} />}
           {changed ? "並び順を保存" : "保存済み"}
         </Button>
       </form>
+
+      {changed ? (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+          並び順に未保存の変更があります。削除や別タブでの作業前に保存してください。
+        </p>
+      ) : null}
 
       <div className="grid gap-3">
         {items.map((image, index) => (
@@ -103,7 +119,7 @@ export function SortableImageList({
                 </span>
               </div>
               <p className="mt-2 truncate text-xs text-slate-400">{image.storage_path}</p>
-              <p className="mt-2 text-xs text-slate-500">このスライドにCTAエリアを置く場合は、下のCTA設定で画像上をドラッグします。</p>
+              <p className="mt-2 text-xs text-slate-500">CTAを置く場合は「CTAエリア」タブで、このスライドを選んでください。</p>
             </div>
 
             <div className="col-span-3 flex flex-wrap justify-end gap-2 md:col-span-1">
@@ -125,12 +141,12 @@ export function SortableImageList({
               >
                 <ArrowDown size={17} />
               </button>
-              <form action={moveAction}>
-                <input type="hidden" name="direction" value="up" />
-                <input type="hidden" name="image_id" value={image.id} />
-                <button className="sr-only">上へ保存</button>
-              </form>
-              <form action={deleteAction}>
+              <form
+                action={deleteAction}
+                onSubmit={(event) => {
+                  if (!confirmDelete()) event.preventDefault();
+                }}
+              >
                 <input type="hidden" name="image_id" value={image.id} />
                 <Button className="h-10 bg-red-700 px-3 hover:bg-red-800" aria-label="削除">
                   <Trash2 size={17} />

@@ -3,8 +3,8 @@ import { requireUser } from "@/lib/auth";
 import { upsertCtaArea } from "@/lib/cta-areas";
 
 export async function POST(request: Request) {
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   const formData = await request.formData();
-  await upsertCtaArea(supabase, formData);
+  await upsertCtaArea(supabase, user.id, formData);
   return NextResponse.json({ ok: true }, { status: 201 });
 }

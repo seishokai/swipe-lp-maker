@@ -15,7 +15,7 @@ export default function NewLpPage() {
     <div className="grid gap-6">
       <div>
         <h1 className="text-2xl font-semibold text-ink">LP新規作成</h1>
-        <p className="mt-1 text-sm text-slate-600">まずはタイトル、slug、CTA URLを設定します。</p>
+        <p className="mt-1 text-sm text-slate-600">まずはタイトル、公開URL、CTA URLを設定します。作成後に画像・動画を追加できます。</p>
       </div>
       <LpForm action={action} />
     </div>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Copy, ExternalLink, Pencil, Plus } from "lucide-react";
+import { Copy, ExternalLink, Images, Pencil, Plus } from "lucide-react";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,12 @@ const statusLabel: Record<string, string> = {
   archived: "アーカイブ",
 };
 
+const statusClass: Record<string, string> = {
+  draft: "bg-slate-100 text-slate-700",
+  published: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+  archived: "bg-slate-100 text-slate-500",
+};
+
 export default async function LpListPage() {
   const { supabase, user } = await requireUser();
   const lps = (await listLandingPages(supabase, user.id)) as LpListItem[];
@@ -34,72 +40,85 @@ export default async function LpListPage() {
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink">LP一覧</h1>
-          <p className="mt-1 text-sm text-slate-600">画像スワイプ型LPの作成、編集、公開を管理します。</p>
+          <h1 className="text-3xl font-semibold tracking-normal text-ink">LP一覧</h1>
+          <p className="mt-2 text-sm text-slate-600">作成済みLPの編集、公開ページ確認、複製をここから行います。</p>
         </div>
-        <Link href="/dashboard/lps/new" className="inline-flex h-10 items-center gap-2 rounded-md bg-ink px-4 text-sm font-medium text-white">
+        <Link href="/dashboard/lps/new" className="inline-flex h-12 items-center gap-2 rounded-md bg-ink px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-black">
           <Plus size={18} />
           新規作成
         </Link>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-line bg-white">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="border-b border-line bg-slate-50 text-slate-600">
-            <tr>
-              <th className="px-4 py-3">タイトル</th>
-              <th className="px-4 py-3">状態</th>
-              <th className="px-4 py-3">画像</th>
-              <th className="px-4 py-3">公開URL</th>
-              <th className="px-4 py-3">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lps.map((lp) => (
-              <tr key={lp.id} className="border-b border-line last:border-0">
-                <td className="px-4 py-4">
-                  <div className="font-medium text-ink">{lp.title}</div>
-                  <div className="text-xs text-slate-500">/{lp.slug}</div>
-                </td>
-                <td className="px-4 py-4">
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                    {statusLabel[lp.status] || lp.status}
-                  </span>
-                </td>
-                <td className="px-4 py-4">{lp.lp_images.length}</td>
-                <td className="px-4 py-4">
-                  <a className="inline-flex items-center gap-1 text-accent" href={`${getSiteUrl()}/lp/${lp.slug}`} target="_blank">
-                    /lp/{lp.slug}
-                    <ExternalLink size={14} />
-                  </a>
-                </td>
-                <td className="px-4 py-4">
-                  <div className="flex gap-2">
-                    <Link href={`/dashboard/lps/${lp.id}/edit`} className="inline-flex h-9 items-center gap-2 rounded-md border border-line px-3">
-                      <Pencil size={16} />
-                      編集
-                    </Link>
-                    <form action={duplicateAction}>
-                      <input type="hidden" name="id" value={lp.id} />
-                      <Button className="h-9 bg-white px-3 text-ink ring-1 ring-line hover:bg-slate-50">
-                        <Copy size={16} />
-                        複製
-                      </Button>
-                    </form>
+      {lps.length === 0 ? (
+        <div className="rounded-lg border border-line bg-white p-10 text-center shadow-soft">
+          <p className="text-base font-semibold text-ink">まだLPがありません</p>
+          <p className="mt-2 text-sm text-slate-500">最初のLPを作成して、画像や動画を追加しましょう。</p>
+          <Link href="/dashboard/lps/new" className="mt-5 inline-flex h-11 items-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white">
+            <Plus size={18} />
+            LPを作る
+          </Link>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {lps.map((lp) => {
+            const publicUrl = `${getSiteUrl()}/lp/${lp.slug}`;
+            return (
+              <article key={lp.id} className="grid gap-4 rounded-lg border border-line bg-white p-4 shadow-soft lg:grid-cols-[1fr_auto] lg:items-center">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h2 className="text-lg font-semibold text-ink">{lp.title}</h2>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass[lp.status] || "bg-slate-100 text-slate-700"}`}>
+                      {statusLabel[lp.status] || lp.status}
+                    </span>
                   </div>
-                </td>
-              </tr>
-            ))}
-            {lps.length === 0 ? (
-              <tr>
-                <td className="px-4 py-10 text-center text-slate-500" colSpan={5}>
-                  まだLPがありません。
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                    <span>/{lp.slug}</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Images size={15} />
+                      {lp.lp_images.length}枚
+                    </span>
+                    {lp.status === "published" ? (
+                      <a className="inline-flex items-center gap-1 text-accent" href={publicUrl} target="_blank" rel="noreferrer">
+                        公開URLを見る
+                        <ExternalLink size={14} />
+                      </a>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-slate-400">
+                        未公開
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 lg:justify-end">
+                  <Link href={`/dashboard/lps/${lp.id}/edit`} className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-black">
+                    <Pencil size={16} />
+                    <span>編集</span>
+                  </Link>
+                  {lp.status === "published" ? (
+                    <a href={publicUrl} target="_blank" rel="noreferrer" className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink transition hover:bg-mist">
+                      <ExternalLink size={16} />
+                      <span>公開ページ</span>
+                    </a>
+                  ) : (
+                    <span className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-line bg-slate-100 px-4 text-sm font-semibold text-slate-500">
+                      <ExternalLink size={16} />
+                      <span>非公開</span>
+                    </span>
+                  )}
+                  <form action={duplicateAction} className="contents">
+                    <input type="hidden" name="id" value={lp.id} />
+                    <Button className="h-11 bg-white px-4 text-ink ring-1 ring-line hover:bg-mist">
+                      <Copy size={16} />
+                      <span>複製</span>
+                    </Button>
+                  </form>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

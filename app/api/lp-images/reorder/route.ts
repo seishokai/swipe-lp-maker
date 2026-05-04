@@ -3,13 +3,13 @@ import { requireUser } from "@/lib/auth";
 import { reorderImages } from "@/lib/lp-images";
 
 export async function POST(request: Request) {
-  const { supabase } = await requireUser();
-  const { imageIds } = await request.json();
+  const { supabase, user } = await requireUser();
+  const { lpId, imageIds } = await request.json();
 
-  if (!Array.isArray(imageIds)) {
-    return NextResponse.json({ error: "imageIds must be an array." }, { status: 400 });
+  if (!lpId || !Array.isArray(imageIds)) {
+    return NextResponse.json({ error: "lpId and imageIds are required." }, { status: 400 });
   }
 
-  await reorderImages(supabase, imageIds.map(String));
+  await reorderImages(supabase, String(lpId), user.id, imageIds.map(String));
   return NextResponse.json({ ok: true });
 }

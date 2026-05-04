@@ -4,7 +4,29 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { LandingPage } from "@/types/lp";
 
-export function LpForm({
+function HiddenTrackingFields({ lp }: { lp?: LandingPage }) {
+  return (
+    <>
+      <input type="hidden" name="meta_pixel_id" value={lp?.meta_pixel_id || ""} />
+      <input type="hidden" name="google_analytics_id" value={lp?.google_analytics_id || ""} />
+    </>
+  );
+}
+
+function HiddenBasicFields({ lp }: { lp?: LandingPage }) {
+  return (
+    <>
+      <input type="hidden" name="title" value={lp?.title || ""} />
+      <input type="hidden" name="slug" value={lp?.slug || ""} />
+      <input type="hidden" name="cta_url" value={lp?.cta_url || ""} />
+      <input type="hidden" name="fixed_cta_enabled" value={lp?.fixed_cta_enabled ? "on" : ""} />
+      <input type="hidden" name="fixed_cta_label" value={lp?.fixed_cta_label || "詳しく見る"} />
+      <input type="hidden" name="fixed_cta_style" value={lp?.fixed_cta_style || "solid"} />
+    </>
+  );
+}
+
+export function BasicSettingsForm({
   lp,
   action,
 }: {
@@ -13,6 +35,7 @@ export function LpForm({
 }) {
   return (
     <form action={action} className="grid gap-5 rounded-lg border border-line bg-white p-5 shadow-soft">
+      <HiddenTrackingFields lp={lp} />
       <div className="flex items-center gap-3 border-b border-line pb-4">
         <div className="grid h-10 w-10 place-items-center rounded-md bg-accent/10 text-accent">
           <Smartphone size={20} />
@@ -63,33 +86,55 @@ export function LpForm({
         </div>
       </div>
 
-      <TrackingFields lp={lp} />
-
       <Button className="w-fit">
         <Save size={18} />
-        保存する
+        基本設定を保存
       </Button>
     </form>
   );
 }
 
-export function TrackingFields({ lp }: { lp?: LandingPage }) {
+export function TrackingSettingsForm({
+  lp,
+  action,
+}: {
+  lp?: LandingPage;
+  action: (formData: FormData) => Promise<void>;
+}) {
   return (
-    <div className="grid gap-4 rounded-lg bg-white ring-1 ring-line md:grid-cols-2">
-      <div className="grid gap-3 p-4">
-        <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <Megaphone size={17} />
-          Meta Pixel
+    <form action={action} className="grid gap-5 rounded-lg border border-line bg-white p-5 shadow-soft">
+      <HiddenBasicFields lp={lp} />
+      <div className="flex items-center gap-3 border-b border-line pb-4">
+        <div className="grid h-10 w-10 place-items-center rounded-md bg-accent/10 text-accent">
+          <BarChart3 size={20} />
         </div>
-        <Input name="meta_pixel_id" defaultValue={lp?.meta_pixel_id || ""} placeholder="1234567890" />
-      </div>
-      <div className="grid gap-3 border-t border-line p-4 md:border-l md:border-t-0">
-        <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <BarChart3 size={17} />
-          Google Analytics
+        <div>
+          <h2 className="text-base font-semibold text-ink">計測タグ</h2>
+          <p className="text-sm text-slate-500">広告配信や解析に使うIDを入力します。</p>
         </div>
-        <Input name="google_analytics_id" defaultValue={lp?.google_analytics_id || ""} placeholder="G-XXXXXXXXXX" />
       </div>
-    </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 rounded-lg bg-mist p-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+            <Megaphone size={17} />
+            Meta Pixel
+          </div>
+          <Input name="meta_pixel_id" defaultValue={lp?.meta_pixel_id || ""} placeholder="1234567890" />
+        </div>
+        <div className="grid gap-3 rounded-lg bg-mist p-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+            <BarChart3 size={17} />
+            Google Analytics
+          </div>
+          <Input name="google_analytics_id" defaultValue={lp?.google_analytics_id || ""} placeholder="G-XXXXXXXXXX" />
+        </div>
+      </div>
+
+      <Button className="w-fit">
+        <Save size={18} />
+        計測タグを保存
+      </Button>
+    </form>
   );
 }

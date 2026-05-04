@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, ExternalLink } from "lucide-react";
+import { Check, Copy, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function PublicUrlPanel({
@@ -20,29 +20,42 @@ export function PublicUrlPanel({
   }
 
   return (
-    <section className="grid gap-4 rounded-lg border border-line bg-white p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-ink">公開URL</h2>
-          <p className="mt-1 break-all text-sm text-slate-600">{url}</p>
-          <p className="mt-2 text-sm text-slate-500">
-            {published ? "現在公開中です。" : "現在は非公開です。公開するとこのURLで表示できます。"}
-          </p>
+    <section className="rounded-lg border border-line bg-white p-4 shadow-soft">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-sm font-semibold text-ink">公開URL</h2>
+            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${published ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "bg-slate-100 text-slate-600"}`}>
+              {published ? "公開中" : "非公開"}
+            </span>
+          </div>
+          <p className="mt-2 break-all text-sm text-slate-600">{url}</p>
         </div>
-        <div className="flex gap-2">
-          <Button type="button" className="bg-slate-700 hover:bg-slate-800" onClick={copyUrl}>
-            <Copy size={18} />
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" className="bg-white text-ink ring-1 ring-line hover:bg-mist" onClick={copyUrl}>
+            {copied ? <Check size={18} /> : <Copy size={18} />}
             {copied ? "コピー済み" : "コピー"}
           </Button>
-          <a href={url} target="_blank" className="inline-flex h-10 items-center gap-2 rounded-md bg-ink px-4 text-sm font-medium text-white">
-            <ExternalLink size={18} />
-            開く
-          </a>
+          {published ? (
+            <a href={url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-black">
+              <ExternalLink size={18} />
+              公開ページを見る
+            </a>
+          ) : (
+            <span className="inline-flex h-10 items-center gap-2 rounded-md bg-slate-200 px-4 text-sm font-semibold text-slate-500">
+              <ExternalLink size={18} />
+              公開後に確認
+            </span>
+          )}
         </div>
       </div>
-      <div className="mx-auto h-[560px] w-[280px] overflow-hidden rounded-[28px] border-8 border-ink bg-black shadow-xl">
-        <iframe title="LPプレビュー" src={url} className="h-full w-full border-0 bg-black" />
-      </div>
+      {published ? (
+        <div className="mt-4 hidden justify-center md:flex">
+          <div className="h-[560px] w-[280px] overflow-hidden rounded-[28px] border-8 border-ink bg-black shadow-xl">
+            <iframe title="LPプレビュー" src={url} className="h-full w-full border-0 bg-black" />
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

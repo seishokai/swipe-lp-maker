@@ -24,7 +24,6 @@ export async function getLandingPage(
     .select("*, lp_images(*, cta_areas(*))")
     .eq("id", id)
     .eq("user_id", userId)
-    .order("sort_order", { referencedTable: "lp_images", ascending: true })
     .single();
 
   if (error) throw error;
@@ -34,18 +33,29 @@ export async function getLandingPage(
 function getLpPayload(formData: FormData) {
   const title = String(formData.get("title") || "").trim();
   const slug = normalizeSlug(String(formData.get("slug") || title));
+  const ctaUrl = String(formData.get("cta_url") || "").trim() || null;
+  const fixedCtaEnabled = formData.get("fixed_cta_enabled") === "on";
+  const fixedCtaStyle = String(formData.get("fixed_cta_style") || "solid");
 
   if (!title || !slug) {
     throw new Error("Title and slug are required.");
   }
 
+  if (fixedCtaEnabled && !ctaUrl) {
+    throw new Error("固定CTAボタンを表示するには、共通CTA URLを入力してください。");
+  }
+
+  if (!["solid", "glass", "minimal"].includes(fixedCtaStyle)) {
+    throw new Error("固定CTAデザインの値が正しくありません。");
+  }
+
   return {
     title,
     slug,
-    cta_url: String(formData.get("cta_url") || "").trim() || null,
-    fixed_cta_enabled: formData.get("fixed_cta_enabled") === "on",
+    cta_url: ctaUrl,
+    fixed_cta_enabled: fixedCtaEnabled,
     fixed_cta_label: String(formData.get("fixed_cta_label") || "").trim() || "詳しく見る",
-    fixed_cta_style: String(formData.get("fixed_cta_style") || "solid"),
+    fixed_cta_style: fixedCtaStyle,
     meta_pixel_id: String(formData.get("meta_pixel_id") || "").trim() || null,
     google_analytics_id: String(formData.get("google_analytics_id") || "").trim() || null,
   };
@@ -137,7 +147,7 @@ export async function duplicateLandingPage(
 
   if (lpError) throw lpError;
 
-  for (const image of source.lp_images) {
+  for (const image of source.lp_images || []) {
     const extension = image.storage_path.split(".").pop() || "jpg";
     const newImageId = crypto.randomUUID();
     const newPath = `${userId}/${copy.id}/${newImageId}.${extension}`;
@@ -161,7 +171,7 @@ export async function duplicateLandingPage(
 
     if (imageError) throw imageError;
 
-    if (image.cta_areas.length > 0) {
+    if ((image.cta_areas || []).length > 0) {
       const { error: ctaError } = await supabase.from("cta_areas").insert(
         image.cta_areas.map((area) => ({
           lp_image_id: newImage.id,

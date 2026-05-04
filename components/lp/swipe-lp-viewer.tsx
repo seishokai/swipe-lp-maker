@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
 import type { LandingPageWithImages } from "@/types/lp";
 
 type Rect = {
@@ -10,28 +11,29 @@ type Rect = {
   height: number;
 };
 
-function getContainedRect(container: HTMLElement, imageWidth: number, imageHeight: number): Rect {
-  const box = container.getBoundingClientRect();
+function getContainedRectInside(element: HTMLElement, mediaWidth: number, mediaHeight: number): Rect {
+  const box = element.getBoundingClientRect();
   const containerRatio = box.width / box.height;
-  const imageRatio = imageWidth / imageHeight;
+  const mediaRatio = mediaWidth / mediaHeight;
 
-  if (imageRatio > containerRatio) {
+  if (mediaRatio > containerRatio) {
     const width = box.width;
-    const height = width / imageRatio;
+    const height = width / mediaRatio;
     return { left: 0, top: (box.height - height) / 2, width, height };
   }
 
   const height = box.height;
-  const width = height * imageRatio;
+  const width = height * mediaRatio;
   return { left: (box.width - width) / 2, top: 0, width, height };
 }
 
 export function SwipeLpViewer({ lp }: { lp: LandingPageWithImages }) {
   const fixedHref = lp.cta_url;
+  const images = [...(lp.lp_images || [])].sort((a, b) => a.sort_order - b.sort_order);
 
-  if (lp.lp_images.length === 0) {
+  if (images.length === 0) {
     return (
-      <main className="grid min-h-svh place-items-center bg-black px-6 text-center text-white">
+      <main className="grid min-h-dvh place-items-center bg-black px-6 text-center text-white">
         <div>
           <p className="text-sm text-white/60">Swipe LP Maker</p>
           <h1 className="mt-3 text-2xl font-semibold">{lp.title}</h1>
@@ -43,7 +45,7 @@ export function SwipeLpViewer({ lp }: { lp: LandingPageWithImages }) {
 
   return (
     <main className="lp-scroll" aria-label={lp.title}>
-      {lp.lp_images.map((image) => (
+      {images.map((image) => (
         <SwipeSlide key={image.id} image={image} fallbackUrl={lp.cta_url} title={lp.title} />
       ))}
       {lp.fixed_cta_enabled && fixedHref ? (
@@ -64,7 +66,8 @@ function SwipeSlide({
   fallbackUrl: string | null;
   title: string;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const slideRef = useRef<HTMLElement>(null);
+  const mediaRef = useRef<HTMLImageElement | HTMLVideoElement>(null);
   const [rect, setRect] = useState<Rect | null>(null);
   const [naturalSize, setNaturalSize] = useState({
     width: image.width || 1080,
@@ -72,25 +75,42 @@ function SwipeSlide({
   });
 
   useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-
     function update() {
-      if (!ref.current || !naturalSize.width || !naturalSize.height) {
+      const slide = slideRef.current;
+      const media = mediaRef.current;
+      if (!slide || !media || !naturalSize.width || !naturalSize.height) {
         setRect(null);
         return;
       }
-      setRect(getContainedRect(ref.current, naturalSize.width, naturalSize.height));
+
+      const slideBox = slide.getBoundingClientRect();
+      const mediaBox = media.getBoundingClientRect();
+      const contained = getContainedRectInside(media, naturalSize.width, naturalSize.height);
+      setRect({
+        left: mediaBox.left - slideBox.left + contained.left,
+        top: mediaBox.top - slideBox.top + contained.top,
+        width: contained.width,
+        height: contained.height,
+      });
     }
 
     update();
+    const slide = slideRef.current;
+    const media = mediaRef.current;
     const observer = new ResizeObserver(update);
-    observer.observe(element);
-    return () => observer.disconnect();
+    if (slide) observer.observe(slide);
+    if (media) observer.observe(media);
+    window.addEventListener("orientationchange", update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("orientationchange", update);
+    };
   }, [naturalSize.height, naturalSize.width]);
 
+  const ctaAreas = image.cta_areas || [];
+
   return (
-    <section ref={ref} className="lp-slide">
+    <section ref={slideRef} className="lp-slide">
       {image.media_type === "video" ? (
         <video className="lp-slide-bg" src={image.public_url} autoPlay muted loop playsInline aria-hidden />
       ) : (
@@ -99,6 +119,7 @@ function SwipeSlide({
       )}
       {image.media_type === "video" ? (
         <video
+          ref={mediaRef as RefObject<HTMLVideoElement>}
           className="lp-slide-image"
           src={image.public_url}
           autoPlay
@@ -114,6 +135,7 @@ function SwipeSlide({
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
         <img
+          ref={mediaRef as RefObject<HTMLImageElement>}
           className="lp-slide-image"
           src={image.public_url}
           alt={image.alt_text || title}
@@ -124,7 +146,7 @@ function SwipeSlide({
         />
       )}
       {rect
-        ? image.cta_areas.map((area) => {
+        ? ctaAreas.map((area) => {
             const href = area.url || fallbackUrl;
             if (!href) return null;
             return (
