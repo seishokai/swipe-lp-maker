@@ -34,6 +34,7 @@ export function ImageUploader({ lpId, userId }: { lpId: string; userId: string }
   const [progress, setProgress] = useState("");
   const [isPending, startTransition] = useTransition();
   const selectedCount = files.length;
+  const isOverLimit = selectedCount > MAX_FILES;
 
   async function uploadSelectedFiles() {
     setMessage("");
@@ -116,7 +117,9 @@ export function ImageUploader({ lpId, userId }: { lpId: string; userId: string }
           <div>
             <h2 className="text-base font-semibold text-ink">画像・動画をまとめて追加</h2>
             <p className="mt-1 text-sm text-slate-600">複数ファイルを一気に選べます。追加後、下の一覧で順番を調整できます。</p>
-            <p className="mt-1 text-xs text-slate-400">対応: JPG / PNG / WebP / GIF / MP4 / WebM / MOV</p>
+            <p className="mt-1 text-xs text-slate-400">
+              一度に最大{MAX_FILES}件まで / 画像20MBまで / 動画120MBまで / JPG・PNG・WebP・GIF・MP4・WebM・MOV対応
+            </p>
           </div>
         </div>
 
@@ -129,11 +132,17 @@ export function ImageUploader({ lpId, userId }: { lpId: string; userId: string }
             onChange={(event) => setFiles(Array.from(event.currentTarget.files || []))}
             className="h-11 rounded-md border border-line bg-paper px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
           />
-          <Button type="button" className="h-11" disabled={isPending || selectedCount === 0} onClick={uploadSelectedFiles}>
+          <Button type="button" className="h-11" disabled={isPending || selectedCount === 0 || isOverLimit} onClick={uploadSelectedFiles}>
             <UploadCloud size={18} />
             {progress ? "追加中..." : selectedCount > 0 ? `${selectedCount}件を追加` : "まとめて追加"}
           </Button>
         </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold">
+        <span className={isOverLimit ? "rounded-full bg-red-50 px-2 py-1 text-red-700" : "rounded-full bg-mist px-2 py-1 text-slate-600"}>
+          選択中: {selectedCount}/{MAX_FILES}件
+        </span>
+        {isOverLimit ? <span className="text-red-700">件数が多すぎます。{MAX_FILES}件以内にしてください。</span> : null}
       </div>
       {progress ? <p className="mt-3 text-sm font-semibold text-accent">{progress}</p> : null}
       {message ? <p className="mt-3 text-sm text-slate-600">{message}</p> : null}
