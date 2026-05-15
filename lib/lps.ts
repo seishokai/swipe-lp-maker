@@ -11,7 +11,7 @@ export async function listLandingPages(supabase: AppSupabaseClient, userId: stri
     .order("updated_at", { ascending: false });
 
   if (error) throw error;
-  return data;
+  return data || [];
 }
 
 export async function getLandingPage(
@@ -38,7 +38,7 @@ function getLpPayload(formData: FormData) {
   const fixedCtaStyle = String(formData.get("fixed_cta_style") || "solid");
 
   if (!title || !slug) {
-    throw new Error("Title and slug are required.");
+    throw new Error("タイトルとURL slugを入力してください。");
   }
 
   if (fixedCtaEnabled && !ctaUrl) {
