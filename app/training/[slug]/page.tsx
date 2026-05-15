@@ -59,15 +59,10 @@ export default async function PublicTrainingPage({ params }: { params: Promise<{
                           <img src={asset.public_url} alt={asset.file_name || section.title} className="w-full bg-white object-contain" />
                         ) : asset.asset_type === "video" ? (
                           <video src={asset.public_url} controls playsInline className="w-full bg-black" />
-                        ) : asset.asset_type === "pdf" ? (
-                          <a href={asset.public_url} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-4 font-semibold text-ink">
-                            <FileText size={20} />
-                            {asset.file_name || "PDFを開く"}
-                          </a>
                         ) : (
                           <a href={asset.public_url} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-4 font-semibold text-ink">
                             <FileText size={20} />
-                            {asset.file_name || "ファイルを開く"}
+                            {asset.file_name || (asset.asset_type === "pdf" ? "PDFを開く" : "ファイルを開く")}
                           </a>
                         )}
                       </div>

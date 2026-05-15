@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Copy, ExternalLink, Pencil, Plus } from "lucide-react";
+import { AlertTriangle, Copy, ExternalLink, Pencil, Plus } from "lucide-react";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { Button } from "@/components/ui/button";
@@ -7,9 +7,41 @@ import { getSiteUrl } from "@/lib/env";
 import { requireUser } from "@/lib/auth";
 import { duplicateTrainingCourse, listTrainingCourses } from "@/lib/trainings";
 
+function SetupRequired({ message }: { message: string }) {
+  return (
+    <div className="grid gap-6">
+      <div>
+        <h1 className="text-3xl font-semibold text-ink">研修資料一覧</h1>
+        <p className="mt-2 text-sm text-slate-600">研修資料の作成、編集、公開を管理します。</p>
+      </div>
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950 shadow-soft">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="mt-1 shrink-0" size={22} />
+          <div>
+            <h2 className="text-lg font-semibold">Supabaseの研修用DB設定が必要です</h2>
+            <p className="mt-2 text-sm leading-6">
+              研修資料管理で使うテーブルがまだSupabase側にありません。SupabaseのSQL Editorで
+              <span className="mx-1 font-semibold">supabase/migrations/0003_training_courses.sql</span>
+              を実行してください。
+            </p>
+            <p className="mt-2 text-xs opacity-80">詳細: {message}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default async function TrainingsPage() {
   const { supabase, user } = await requireUser();
-  const trainings = await listTrainingCourses(supabase, user.id);
+  let trainings;
+
+  try {
+    trainings = await listTrainingCourses(supabase, user.id);
+  } catch (error) {
+    return <SetupRequired message={error instanceof Error ? error.message : "テーブル取得に失敗しました。"} />;
+  }
+
   const siteUrl = getSiteUrl();
 
   async function duplicateAction(formData: FormData) {
