@@ -1,0 +1,6 @@
+NEXT_PUBLIC_SITE_URL=https://swipe-lp-maker.vercel.app
+NEXT_PUBLIC_SUPABASE_URL=https://ndlfqrvoejwgqfdtghmg.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_JPzgVHsAUdW-qSGy2_G5fw_kEPCMF3w
+
+# ローカル開発では NEXT_PUBLIC_SITE_URL を http://localhost:3000 に変更してください。
+# Supabase service_role key はここに入れないでください。
