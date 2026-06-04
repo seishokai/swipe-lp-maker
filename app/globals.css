@@ -157,6 +157,15 @@ a {
   object-fit: cover;
 }
 
+.lp-scroll-fill .lp-slide-image-long,
+.lp-scroll-phone .lp-slide-image-long {
+  width: 100vw;
+  max-width: 100vw;
+  height: auto;
+  min-height: 0;
+  object-fit: contain;
+}
+
 .fixed-cta {
   position: fixed;
   left: max(16px, env(safe-area-inset-left));

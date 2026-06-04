@@ -133,6 +133,14 @@ function SwipeSlide({
     height: image.height || 1920,
   });
   const longImage = image.media_type === "image" && isLongLpImage(naturalSize.width, naturalSize.height);
+  const ctaAreas = image.cta_areas || [];
+
+  useEffect(() => {
+    const media = mediaRef.current;
+    if (image.media_type === "image" && media instanceof HTMLImageElement && media.complete && media.naturalWidth > 0) {
+      setNaturalSize({ width: media.naturalWidth, height: media.naturalHeight });
+    }
+  }, [image.media_type, image.public_url]);
 
   useEffect(() => {
     function update() {
@@ -161,13 +169,13 @@ function SwipeSlide({
     if (slide) observer.observe(slide);
     if (media) observer.observe(media);
     window.addEventListener("orientationchange", update);
+    window.addEventListener("resize", update);
     return () => {
       observer.disconnect();
       window.removeEventListener("orientationchange", update);
+      window.removeEventListener("resize", update);
     };
   }, [longImage, naturalSize.height, naturalSize.width, viewMode]);
-
-  const ctaAreas = image.cta_areas || [];
 
   return (
     <section ref={slideRef} className={longImage ? "lp-slide lp-slide-long" : "lp-slide"}>
@@ -177,6 +185,7 @@ function SwipeSlide({
         // eslint-disable-next-line @next/next/no-img-element
         <img className="lp-slide-bg" src={image.public_url} alt="" aria-hidden />
       ) : null}
+
       {image.media_type === "video" ? (
         <video
           ref={mediaRef as RefObject<HTMLVideoElement>}
@@ -205,6 +214,7 @@ function SwipeSlide({
           }}
         />
       )}
+
       {rect
         ? ctaAreas.map((area) => {
             const href = area.url || fallbackUrl;
