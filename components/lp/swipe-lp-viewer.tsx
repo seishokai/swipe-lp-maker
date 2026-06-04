@@ -14,8 +14,17 @@ type Rect = {
   height: number;
 };
 
-function getObjectFitRect(element: HTMLElement, mediaWidth: number, mediaHeight: number, mode: ViewMode): Rect {
+function isLongLpImage(width: number, height: number) {
+  return height / Math.max(width, 1) > 2.15;
+}
+
+function getObjectFitRect(element: HTMLElement, mediaWidth: number, mediaHeight: number, mode: ViewMode, longImage: boolean): Rect {
   const box = element.getBoundingClientRect();
+
+  if (longImage) {
+    return { left: 0, top: 0, width: box.width, height: box.height };
+  }
+
   const containerRatio = box.width / box.height;
   const mediaRatio = mediaWidth / mediaHeight;
   const shouldFitByWidth = mode === "phone" ? mediaRatio > containerRatio : mediaRatio < containerRatio;
@@ -82,7 +91,7 @@ export function SwipeLpViewer({ lp }: { lp: LandingPageWithImages }) {
           type="button"
           className={viewMode === "fill" ? "is-active" : ""}
           onClick={() => setViewMode("fill")}
-          aria-label="PC画面いっぱいに表示"
+          aria-label="画面いっぱいに表示"
         >
           <Monitor size={16} />
           <span>画面いっぱい</span>
@@ -123,6 +132,7 @@ function SwipeSlide({
     width: image.width || 1080,
     height: image.height || 1920,
   });
+  const longImage = image.media_type === "image" && isLongLpImage(naturalSize.width, naturalSize.height);
 
   useEffect(() => {
     function update() {
@@ -135,7 +145,7 @@ function SwipeSlide({
 
       const slideBox = slide.getBoundingClientRect();
       const mediaBox = media.getBoundingClientRect();
-      const fitted = getObjectFitRect(media, naturalSize.width, naturalSize.height, viewMode);
+      const fitted = getObjectFitRect(media, naturalSize.width, naturalSize.height, viewMode, longImage);
       setRect({
         left: mediaBox.left - slideBox.left + fitted.left,
         top: mediaBox.top - slideBox.top + fitted.top,
@@ -155,18 +165,18 @@ function SwipeSlide({
       observer.disconnect();
       window.removeEventListener("orientationchange", update);
     };
-  }, [naturalSize.height, naturalSize.width, viewMode]);
+  }, [longImage, naturalSize.height, naturalSize.width, viewMode]);
 
   const ctaAreas = image.cta_areas || [];
 
   return (
-    <section ref={slideRef} className="lp-slide">
-      {image.media_type === "video" ? (
+    <section ref={slideRef} className={longImage ? "lp-slide lp-slide-long" : "lp-slide"}>
+      {!longImage && image.media_type === "video" ? (
         <video className="lp-slide-bg" src={image.public_url} autoPlay muted loop playsInline aria-hidden />
-      ) : (
+      ) : !longImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img className="lp-slide-bg" src={image.public_url} alt="" aria-hidden />
-      )}
+      ) : null}
       {image.media_type === "video" ? (
         <video
           ref={mediaRef as RefObject<HTMLVideoElement>}
@@ -186,7 +196,7 @@ function SwipeSlide({
         // eslint-disable-next-line @next/next/no-img-element
         <img
           ref={mediaRef as RefObject<HTMLImageElement>}
-          className="lp-slide-image"
+          className={longImage ? "lp-slide-image lp-slide-image-long" : "lp-slide-image"}
           src={image.public_url}
           alt={image.alt_text || title}
           onLoad={(event) => {
