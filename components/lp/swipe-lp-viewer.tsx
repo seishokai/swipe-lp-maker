@@ -27,7 +27,8 @@ function getObjectFitRect(element: HTMLElement, mediaWidth: number, mediaHeight:
 
   const containerRatio = box.width / box.height;
   const mediaRatio = mediaWidth / mediaHeight;
-  const shouldFitByWidth = mode === "phone" ? mediaRatio > containerRatio : mediaRatio < containerRatio;
+  const usesContain = mode === "phone";
+  const shouldFitByWidth = usesContain ? mediaRatio > containerRatio : mediaRatio < containerRatio;
 
   if (shouldFitByWidth) {
     const width = box.width;
@@ -43,7 +44,7 @@ function getObjectFitRect(element: HTMLElement, mediaWidth: number, mediaHeight:
 export function SwipeLpViewer({ lp }: { lp: LandingPageWithImages }) {
   const fixedHref = lp.cta_url;
   const images = [...(lp.lp_images || [])].sort((a, b) => a.sort_order - b.sort_order);
-  const [viewMode, setViewMode] = useState<ViewMode>("phone");
+  const [viewMode, setViewMode] = useState<ViewMode>("fill");
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export function SwipeLpViewer({ lp }: { lp: LandingPageWithImages }) {
       await document.exitFullscreen();
       return;
     }
+
     await document.documentElement.requestFullscreen();
   }
 
@@ -82,10 +84,10 @@ export function SwipeLpViewer({ lp }: { lp: LandingPageWithImages }) {
           type="button"
           className={viewMode === "phone" ? "is-active" : ""}
           onClick={() => setViewMode("phone")}
-          aria-label="スマホ比率で表示"
+          aria-label="スマホ枠で表示"
         >
           <Smartphone size={16} />
-          <span>スマホ比率</span>
+          <span>スマホ枠</span>
         </button>
         <button
           type="button"
@@ -181,7 +183,7 @@ function SwipeSlide({
     <section ref={slideRef} className={longImage ? "lp-slide lp-slide-long" : "lp-slide"}>
       {!longImage && image.media_type === "video" ? (
         <video className="lp-slide-bg" src={image.public_url} autoPlay muted loop playsInline aria-hidden />
-      ) : !longImage ? (
+      ) : !longImage && viewMode === "phone" ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img className="lp-slide-bg" src={image.public_url} alt="" aria-hidden />
       ) : null}
