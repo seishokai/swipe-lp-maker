@@ -15,7 +15,7 @@ type Rect = {
 };
 
 function isLongLpImage(width: number, height: number) {
-  return height / Math.max(width, 1) > 2.15;
+  return height / Math.max(width, 1) >= 1.9;
 }
 
 function getObjectFitRect(element: HTMLElement, mediaWidth: number, mediaHeight: number, mode: ViewMode, longImage: boolean): Rect {
